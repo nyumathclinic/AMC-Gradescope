@@ -1,0 +1,415 @@
+#! /usr/bin/env perl
+
+use Getopt::Long;
+use POSIX qw(ceil floor);
+use AMC::Basic;
+use AMC::DataModule::capture 'ZONE_BOX';
+use AMC::NamesFile;
+use AMC::Gui::Avancement;
+use AMC::Scoring;
+use AMC::Data;
+use Text::CSV;
+use File::Basename;
+use Cwd 'abs_path';
+# for debugging
+use Data::Dumper;
+
+# use encoding 'utf8';
+
+my $darkness_threshold=0.1;
+
+my $floor_mark='';
+my $perfect_mark=20;
+my $ceiling=1;
+my $granularity='0.5';
+my $rounding='';
+my $data_dir='';
+
+my $postcorrect_student='';
+my $postcorrect_copy='';
+
+my $progres=1;
+my $progres_id='';
+
+my $students_list='';
+my $project_dir='';
+
+my $debug='';
+
+GetOptions("project=s"=>\$project_dir,
+       "data=s"=>\$data_dir,
+	   "seuil=s"=>\$darkness_threshold,
+	   "debug=s"=>\$debug,
+	   "grain=s"=>\$granularity,
+	   "arrondi=s"=>\$rounding_scheme,
+	   "notemax=s"=>\$perfect_mark,
+	   "plafond!"=>\$ceiling,
+	   "notemin=s"=>\$floor_mark,
+	   "postcorrect-student=s"=>\$postcorrect_student,
+	   "postcorrect-copy=s"=>\$postcorrect_copy,
+	   "progression-id=s"=>\$progres_id,
+	   "progression=s"=>\$progres,
+       "students-list=s"=>\$students_list
+	   );
+# I guess these options are taken out of @ARGV, so what's left 
+# is the actual arguments
+# This is the Gradescope Evaluations file for a *single* question.
+my $gradescope_file = shift(@ARGV);
+# We also need to specify the AMC question ID for this question.
+# consider: configuring with a lookup table (csv file, AMC ID)
+# or a CLI option.
+
+
+# set_debug($debug);
+
+# Maybe alias the global one to this?
+# Or manually skip exporting it from AMC::Basic
+sub mydebug {
+    my @s=@_;
+    return if(!$debug);
+    for my $l (@s) {
+	my @t = times();
+	$l=sprintf("[%7d,%7.02f] ",$$,$t[0]+$t[1]+$t[2]+$t[3]).$l;
+	$l=$l."\n" if($l !~ /\n$/);
+    print $l;
+    }
+}
+# This doesn't seem to to anything.
+# *debug = *mydebug;
+
+sub error {
+  my ($text)=@_;
+  debug "AMC-Import-Gradescope ERROR: $text";
+  print "ERROR: $text\n";
+  exit(1);
+}
+
+sub read_project_options {
+    # read options from project directory
+    $dir = shift;
+    $dir = "." if (!-d $dir);
+    $xml = new XML::Simple;
+    return $xml->XMLin($dir . "/options.xml");
+}
+
+
+mydebug "debug: ". $debug;
+mydebug "get_debug(): ". get_debug();
+mydebug "debug_file(): ". debug_file();
+mydebug "Gradescope file: " . $gradescope_file;
+
+
+$project_options = read_project_options($project_dir);
+
+# $data_dir can be specified on the command line.
+# If not, the current project's options file is read for it.
+# If still not, croak.
+$data_dir = $project_options->{'data'} unless $data_dir;
+if(! -d $data_dir) {
+    attention("No DATA directory: $data_dir");
+    die "No DATA directory: $data_dir";
+}
+
+# Uses an AMC::Gui::Avancement object to tell regularly the calling
+# program how much work we have done so far.
+
+my $avance=AMC::Gui::Avancement::new($progres,'id'=>$progres_id);
+
+# Connects to the databases capture (to get the students sheets and to
+# know which boxes have been ticked) and scoring (to write the
+# computed scores!).
+
+my $data=AMC::Data->new($data_dir);
+my $capture=$data->module('capture');
+my $scoring=$data->module('scoring');
+
+# Get a hash of AMC student IDs, indexed by sheet/copy.
+#
+# Args:
+#     $d: reference to AMC::Data
+#  
+# Returns: reference to hash
+#
+sub get_sc_to_amcid_hash {
+    my $d = shift;
+    my $result = {};
+    my $assoc = $d->module('association');
+    # MPL: The assoc->list property is a reference to a 
+    # list of hashes. Each has has keys:
+    # 
+    # student: The exam sheet number 
+    #     (strange key name but c'est come ça)
+    # copy: The copy number of that sheet 
+    #     (nonzero if sheets are used more than once)
+    # auto: The AMC student ID of the student (N Number with no N)
+    #     if automatically detected 
+    # manual: The AMC student ID of the student if set manually
+    #     in the association panel
+    foreach (@{$assoc->list}) {
+        $sc = studentids_string($_->{'student'}, $_->{'copy'});
+        $amcid = $_->{'auto'} || $_->{'manual'};
+        $result->{$sc} = $amcid;
+    }
+    return $result;
+}
+
+
+# Get a hash of NetIDs, indexed by AMC student IDs.
+# This is to associate GS student IDs (which are NetIDs)
+# to AMC student IDs (which are N Numbers)    
+#
+# Args:
+#   $students_list (string): path to the AMC students CSV file
+#       (allows some keywords for substitution)
+#
+# Returns: reference to hash
+#
+sub get_amcid_to_netid_hash {
+    my $students_list = shift;
+    # If not specified on CL, look in options.xml
+    if (!-f $students_list) {
+        $students_list=$project_options->{'listeetudiants'};
+        $students_list =~ s/%HOME/$ENV{'HOME'}/;
+        mydebug "students_list: " . $students_list;
+    }
+    error("students list not found:$students_list.  (Did you save?)")
+        if(!-f $students_list);
+    my $list_encoding='UTF-8';
+    my $students=AMC::NamesFile::new($students_list,
+                    'encodage'=>$list_encoding,
+                    "identifiant"=>$csv_build_name);
+    # $students->{'noms'} is a reference to a list of hashrefs.
+    # Each hashref is a row in the students CSV file
+    # We put in these fields:
+    # id: N number with no N.  That's what students code on their papers
+    # NetID: NetID          
+    # mydebug "--Students--", Dumper($students->{'noms'}), "--End Students--";
+    $result = {};
+    foreach (@{$students->{'noms'}}) {
+        my $netid = $_->{'NetID'};
+        my $amcid = $_->{'id'};
+        $result->{$amcid} = $netid;
+        mydebug sprintf "NetID: %6s AMC ID: %8d", $netid, $amcid;
+    }
+    return $result;
+}
+
+%sc_to_amcid = %{get_sc_to_amcid_hash($data)};
+mydebug "sc_to_amcid", Dumper(\%sc_to_amcid);
+
+%amcid_to_netid = %{get_amcid_to_netid_hash()};
+mydebug "amcid_to_netid", Dumper(\%amcid_to_netid);
+
+
+# Parse a Gradescope scores file
+# 
+# Args:
+#   $gsp (string): path to Gradescope file
+#
+# Returns: reference to array
+#   each array item is a hashref, corresponding to one line of the file
+#
+#   Name: Student's full name
+#   SID: Student's ID as imported to Gradescope (we used NetIDs)
+#   Email: Student's email address
+#   Total Score:
+#   Status: e.g., 'Graded' or 'Missing'
+#   Submission ID: ID for the document submitted to Gradescope
+#   Submission Time: e.g., '10/16/2017  8:58:11 PM'
+#	Lateness (H:M:S):
+#   View Count:	
+#
+#   Then one key for each problem.  The key name is 
+#       '<number>: <name> (<pointmax> pts)'
+# 
+sub read_gradescope_file {
+    my $gsp = shift;
+    my $result = {};
+    my $csv = Text::CSV->new({binary=>1, auto_diag=>1});
+
+    open my $fh, "<", $gsp;
+    $csv->header($fh);
+    while (my $row = $csv->getline_hr($fh)) {
+        push @$result, $row;
+    }
+    return $result;
+}
+
+# MPL: Read Gradescope CSV file
+#
+# This hardcoded value needs to be configured at some point.
+# Can build a hash %gsqid_to_qtitle
+my $qtitle = 'FR-MT2-3-17';
+my $gs = {};
+$gs->{$qtitle}={};
+my @gs_scores=[];
+
+my $csv = Text::CSV->new({binary=>1, auto_diag=>1});
+open my $fh, "<", $gradescope_file;
+$csv->header($fh);
+while (my $row = $csv->getline_hr($fh)) {
+    ($netid, $score) = ($row->{'sid'}, $row->{'score'});
+    next unless $row->{'question id'} =~ /\d+/; 
+    mydebug sprintf "Student: %6s score: %s ", $row->{'sid'} , $row->{'score'};
+    push @gs_scores, $row;
+    $gs->{$qtitle}->{$netid} = $score;
+}
+# mydebug "gs", Dumper($gs);
+
+
+# Uses an AMC::Scoring object to actually compute the questions
+# scores.
+my $bar=AMC::Scoring::new('onerror'=>'die',
+			  'data'=>$data,
+			  'seuil'=>$darkness_threshold);
+
+$avance->progres(0.05);
+
+
+# Write the variables values in the database, so that they can be
+# retrieved later, and clears all the scores that could have been
+# already computed.
+
+$capture->variable('annotate_source_change',time());
+# $scoring->clear_score;
+$scoring->variable('darkness_threshold',$darkness_threshold);
+$scoring->variable('mark_floor',$floor_mark);
+$scoring->variable('mark_max',$perfect_mark);
+$scoring->variable('ceiling',$ceiling);
+$scoring->variable('rounding',$rounding_scheme);
+$scoring->variable('granularity',$granularity);
+$scoring->variable('postcorrect_student',$postcorrect_student);
+$scoring->variable('postcorrect_copy',$postcorrect_copy);
+
+# Gets the student/copy pairs that has been captured. Each element
+# from the array @captured_studentcopy is an arrayref containing a different
+# (student,copy) pair.
+
+my @captured_studentcopy=$capture->student_copies();
+# mydebug "\@captured_studentcopy: " . Dumper(@captured_studentcopy);
+
+
+# We already said that 0.05 of the work has been made, so the
+# remaining ratio $delta per student/copy is:
+
+my $delta=0.95;
+$delta/=(1+$#captured_studentcopy) if($#captured_studentcopy>=0);
+
+# If postcorrect mode is requested, sets the correct answers from the
+# teacher's copy.
+
+if($postcorrect_student) {
+    $scoring->postcorrect($postcorrect_student,$postcorrect_copy,
+			  $darkness_threshold);
+}
+
+
+
+# Processes each student/copy in turn
+
+# MPL: 
+for my $sc (@captured_studentcopy) {
+  mydebug("MARK: --- SHEET ". studentids_string(@$sc));
+  # @$sc = (sheet, copy) where 'sheet' is the exam sheet number
+  # and 'copy'  is the copy number, if multiple copies are enabled, or 0 o/w
+  # studentids_string(@$sc) is some stringified version of that.
+  # Since we have unique copies, studentids_string(@$sc) = str(${$sc[0]})
+  my ($sheet,$copy) = @$sc;
+  
+  # The hash %codes collects the values of the AMCcodes.
+
+  my %codes=();
+
+  # Gets the scoring strategy for current student/copy, including
+  # which answers are correct, from the scoring database.
+
+  my $ssb=$scoring->student_scoring_base(@$sc,$darkness_threshold);
+  
+
+  # transmits the main strategy (default strategy options values for
+  # all questions) to the scoring engine.
+
+  $bar->set_default_strategy($ssb->{'main_strategy'});
+
+  # The @question_scores collects scores for all questions
+
+  my @question_scores=();
+
+  # Process each question in turn
+    
+  for my $question (keys %{$ssb->{'questions'}}) {
+
+    # $question is the question numerical ID, and
+    # $q is the question scoring data (see AMC::DataModule::scoring)
+
+    my $q=$ssb->{'questions'}->{$question};
+
+
+    # skip all but the Gradescope file's question
+    next unless $q->{'title'} eq $qtitle;
+    mydebug "MARK: QUESTION $question TITLE ".$q->{'title'};
+    # mydebug Dumper($q);
+    mydebug "Unknown question data !" if(!defined($q));
+
+    # We need to prepare a call to capture->set_zone_manual
+    # arguments are:
+    # ($student,$page,$copy,$type,$id_a,$id_b,$manual)
+    # @sc is sheet/copy,
+    # how do we get page?
+    # $type is ZONE_BOX
+    # $id_a is question id (in this case $question)
+    # $id_b is answer id 
+    
+    # * Use $sc to look up the AMC student id in $assoc->list 
+    # * Use student file to look up NetID from AMC student id
+    # * Use Gradescope file to look up score from NetID
+    # So we need to prepare three hashes.
+    $score = $gs->{$qtitle}->{$amcid_to_netid{$sc_to_amcid{studentids_string(@$sc)}}};
+    
+    # Get the answer index:
+    # The manual score choices are 0, ..., max
+    # They get marked with answer id 1, ..., max+1
+    # So we add one to the score to get the answer index.
+    # $id_b = (sprintf "%d", $score) +1;
+    # better: walk through $q->{'answers'} and choose the one that has 
+    # strategy equal to ",<score>"
+    $id_b=-1;
+    foreach (@{$q->{'answers'}}) {
+        $test_answer = $_->{'answer'};
+        if (substr ($_->{'strategy'}, 1) == $score) {
+           $id_b = $test_answer;
+           last;
+        }
+    }
+    error "Answer not found!" if $id_b < 0;
+    # even better: *evaluate* the strategy and compare.  But I don't know how to do that.
+    
+    # We get the page by looking up all the pages and checking.
+    # Seems brutal but I can't find another way.
+    $page_num = -1;
+    $pages = $capture->get_student_pages($sheet,$copy);
+    foreach (@$pages) {
+        $test_page_num = $_->{'page'};
+        if ($capture->get_zoneid($sheet, $test_page_num, $copy, ZONE_BOX, $question, $id_b, 0)) {
+            $page_num = $test_page_num;
+            last;
+        }
+    }
+    error "Page not found!" if $page_num < 0;
+    # mydebug $sheet, $page_num, $copy, ZONE_BOX, $question, $id_b;
+    $capture->set_zone_manual($sheet, $page_num, $copy, ZONE_BOX, $question, $id_b, 1);
+    # Now that we've declared the box ticked, we can score it...
+    # on second thought, just rescore.
+
+  }
+
+
+  $avance->progres($delta);
+}
+
+$data->end_transaction('MARK');
+
+$avance->fin();
+
+
+

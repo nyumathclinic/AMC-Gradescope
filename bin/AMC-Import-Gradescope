@@ -1,10 +1,92 @@
-#!/usr/bin/perl
-use strict;
-use warnings;
+#!/usr/bin/env perl
 
-use AMC::Gradescope qw(main);
+=head1 NAME
+
+AMC-import-gradescope.pl - Import scores from a Gradescope score file to an AMC database
+
+=head1 SYNOPSIS
+
+    $ AMC-import-gradescope --amckey=email --gskey=Email --qlist FR-Canada-ZIP-a FR-Canada-ZIP-b Midterm_I_Free_Response_scores.csv
+
+Import from the file C<Midterm_I_Free_Response_scores.csv>.
+Match the students by email addresses.
+Import the first Gradescope question's scores to the AMC question titled C<FR-Canada-ZIP-a>, 
+and the second Gradescope questions's scores to the AMC question titled C<FR-Canada-ZIP-b>
+
+=head1 DESCRIPTION
+
+=head1 COPYRIGHT
+
+Copyright 2017.
+
+Since AMC is GPL, I guess this package is, too.
+
+No warranty!
+
+=head1 AUTHOR
+
+Matthew Leingang, leingang@nyu.edu
+
+=cut
+
+use Getopt::Long;
+use Data::Dumper; # for debugging
+
+# use AMC::Import::Gradescope;
+use Gradescope::ScoresFile;
+
+my $project_dir = '';
+my $data_dir = '';
+my $amc_key = '';
+my $gs_key = '';
+my $debug, $verbose;
+my $qlist=[];
+my $qname_map={};
+
+GetOptions(
+    'debug'=>\$debug,
+    'verbose'=>\$verbose,
+    'project=s'=>\$project_dir,
+    'data=s'=>\$data_dir, # you'd only want to set this to overload the project option
+    'amckey=s'=>\$amc_key,
+    'gskey=s'=>\$gs_key,
+    'qlist=s@{1,}'=>$qlist,
+    'qmap=s%{1,}'=>$qname_map
+);
+my $gs_path = shift(@ARGV);
+$project_options = read_project_options($project_dir);
+
+# $data_dir can be specified on the command line.
+# If not, the current project's options file is read for it.
+# If still not, croak.
+$data_dir = $project_options->{'data'} unless $data_dir;
+if(! -d $data_dir) {
+    attention("No DATA directory: $data_dir");
+    die "No DATA directory: $data_dir";
+}
+
+print Dumper({
+    'debug'=>$debug,
+    'verbose'=>$verbose,
+    'project'=>$project_dir,
+    'data'=>$data_dir,
+    'amckey'=>$amc_key,
+    'gskey'=>$gs_key,
+    'qlist'=>$qlist,
+    'qmap'=>$qname_map,    
+    'gs_path'=>$gs_path
+});
 
 
-# Wrapper script for the AMC::Gradescope application.
+my $importer = AMC::Import::Gradescope->new(datadir=>$data_dir);
+my $gs = Gradescope::ScoresFile::new($gs_path)
+exit($importer->import($gs, $amc_key, $gs_key, $qname_map));
 
-exit main(@ARGV);
+####
+# This stuff should probably go in a separate package
+sub read_project_options {
+    # read options from project directory
+    $dir = shift;
+    $xml = new XML::Simple;
+    return $xml->XMLin($dir . "/options.xml");
+}
