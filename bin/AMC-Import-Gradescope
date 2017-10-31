@@ -1,0 +1,10 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+use AMC::Gradescope qw(main);
+
+
+# Wrapper script for the AMC::Gradescope application.
+
+exit main(@ARGV);
