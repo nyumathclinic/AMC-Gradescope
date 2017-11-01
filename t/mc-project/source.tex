@@ -1,0 +1,616 @@
+% !TEX TS-program = xelatex
+\documentclass[letterpaper]{ngeexam}
+\title{Midterm Examination I}
+\course{MATH-UA 120.001 Discrete Mathematics}
+\date{October 11, 2017}
+\makeatletter
+\renewcommand{\maketitle}{
+\noindent%
+\begin{tikzpicture}[remember picture, overlay]
+  \definecolor{nyupurple}{HTML}{57068C}
+%  \draw (current page.north west) ++ (0.25in,-0.25in) 
+%      node[anchor=north west] (logo)
+%      {\includegraphics[width=2.5in]{NYUCourant}};
+\end{tikzpicture}%
+    \edef\@TITLE{\uppercase{\@title}}
+    {\noindent\titlefont\LARGE \@course \par}
+    {\noindent\titlefont\Huge  \@TITLE \par}
+    \vskip1em
+    {\noindent\titlefont\large \@date \par}
+    \vskip2em
+}
+\usepackage{mathptmx}
+\usepackage[no-math]{fontspec}
+\usepackage{xltxtra}
+\defaultfontfeatures{Mapping=tex-text}
+\setmainfont{Times New Roman}
+\setmathrm{Times New Roman}
+\setsansfont{Gotham Book}
+\newfontfamily\titlefont{Gotham}
+\makeatother
+
+\usepackage{pdfpages}
+
+
+\usepackage[
+    insidebox, % put labels inside bubbles 
+    box, % make sure all choices stay on same page
+    answers,
+    completemulti
+    ]{automultiplechoice}
+\AMCboxDimensions{shape=oval,down=1mm}
+% new random seed 2017-10-10
+\AMCrandomseed{8530507}
+\def\AMCIntervalFormat#1#2{[#1,\,#2)}
+
+\usepackage{tikz}
+\usetikzlibrary{MATH-UA-123}
+\usetikzlibrary{calc}
+\usetikzlibrary{through}
+
+\usepackage{leincalc}
+\newcommand{\bT}{\text{TRUE}}
+\newcommand{\bF}{\text{FALSE}}
+\newcommand{\divides}{\mathbin{\vert}}
+\newcommand{\set}[1]{\left\{#1\right\}}
+\newcommand{\intersect}{\cap}
+\newcommand{\union}{\cup}
+\newcommand{\PowerSet}[1]{2^{#1}}
+\newcommand{\symdiff}{\mathbin{\triangle}}
+
+\usepackage{nicefrac}
+\usepackage{cancel}
+\usepackage{enumitem}
+\everymath{\displaystyle}
+
+
+\scoringDefaultS{e=0,v=0,b=3,m=0}
+\def\scoringDefaultTF{e=0,v=0,b=1,m=0}
+
+
+
+\usepackage{multicol}
+
+\usepackage{mathptmx}
+\begin{document}
+
+\scoringDefaultS{e=0,v=0,b=3,m=0}
+
+\element{TFJ}{
+\begin{question}{TFJ-0-factorial}
+    $0! = 0$
+    \AMCOpen{lines=1,dots=false,answer={%
+        \begin{minipage}[t]{0.9\textwidth}
+        \noindent\color{blue}\emph{Solution.}
+        \end{minipage}
+        }
+    }{
+        \wrongchoice[0]{0}\scoring{0}
+        \wrongchoice[1]{1}\scoring{1}
+        \wrongchoice[2]{2}\scoring{2}
+        \correctchoice[3]{3}\scoring{3}
+    }    
+\end{question}
+}
+
+\element{TFJ}{
+\begin{question}{TFJ-prime-or-composite}
+    Every positive integer is either prime or composite.
+    \AMCOpen{lines=1,dots=false,answer={%
+        \begin{minipage}[t]{0.9\textwidth}
+        \noindent\color{blue}\emph{Solution.}
+            The positive integer $1$ is neither prime nor composite.
+        \end{minipage}
+        }
+    }{
+        \wrongchoice[0]{0}\scoring{0}
+        \wrongchoice[1]{1}\scoring{1}
+        \wrongchoice[2]{2}\scoring{2}
+        \correctchoice[3]{3}\scoring{3}
+    }    
+\end{question}
+}
+
+\element{TFJ}{
+\begin{question}{TFJ-contrapositive}
+    The boolean operations $x \rightarrow \neg y$ and $y \rightarrow \neg x$
+    are logically equivalent
+    \AMCOpen{lines=1,dots=false,answer={%
+        \begin{minipage}[t]{0.9\textwidth}
+        \noindent\color{blue}\emph{Solution.}
+            True.  Both of these are equivalent to $\neg x \vee \neg y$.
+        \end{minipage}
+        }
+    }{
+        \wrongchoice[0]{0}\scoring{0}
+        \wrongchoice[1]{1}\scoring{1}
+        \wrongchoice[2]{2}\scoring{2}
+        \correctchoice[3]{3}\scoring{3}
+    }    
+\end{question}
+}
+
+\element{TFJ}{
+\begin{question}{TFJ-vacuous}
+    All negative prime numbers are even.
+    \AMCOpen{lines=1,dots=false,answer={%
+        \begin{minipage}[t]{0.9\textwidth}
+        \noindent\color{blue}\emph{Solution.}
+            This is vacuously true!
+        \end{minipage}
+        }
+    }{
+        \wrongchoice[0]{0}\scoring{0}
+        \wrongchoice[1]{1}\scoring{1}
+        \wrongchoice[2]{2}\scoring{2}
+        \correctchoice[3]{3}\scoring{3}
+    }    
+\end{question}
+}
+
+\element{TFJ}{
+\begin{question}{TFJ-subset}
+    The empty set has no subsets.
+    \AMCOpen{lines=1,dots=false,answer={%
+        \begin{minipage}[t]{0.9\textwidth}
+        \noindent\color{blue}\emph{Solution.}
+            The empty set has a single subset, itself.
+        \end{minipage}
+        }
+    }{
+        \wrongchoice[0]{0}\scoring{0}
+        \wrongchoice[1]{1}\scoring{1}
+        \wrongchoice[2]{2}\scoring{2}
+        \correctchoice[3]{3}\scoring{3}
+    }    
+\end{question}
+}
+
+\onecopy{1}{
+% \begin{title page} % this removed the alignment marks. bad.
+\maketitle
+{\setlength{\parindent}{0pt}%
+\AMCcode{NNumber}{8}\hspace*{\fill}
+\begin{minipage}[b]{8cm}
+    Code the eight digits of your N number to the left, 
+    and write your name below.
+    
+    \vspace{3ex}
+    \hfill\namefield{\fbox{
+        \begin{minipage}{.9\linewidth}
+          Name:
+          \vspace*{.5cm}%\dotfill
+          \vspace*{.5cm}%\dotfill
+          \vspace*{1mm}
+\end{minipage}
+  }}\hfill\vspace{5ex}\end{minipage}\hspace*{\fill}
+}
+
+\bigskip
+\noindent{\textbf{\uppercase{READ THE FOLLOWING INFORMATION.}}}
+
+
+\begin{itemize}
+\item You have until the end of class to finish this exam.
+\item Fixed-response questions on this exam will be graded by computer.  Please fill in the bubbles completely and use pencil in case you want to change your responses.  Do not write over the four dots at the corners of the pages, or the code at the top of each page.
+\item Calculators, books, notes, and other aids are not allowed.
+\item You may use the backs of the pages or the extra pages for scratch work.  \textbf{\emph{Do not unstaple or remove pages as they can be lost in the grading process.}}
+\item Please do not put your name on any page besides the first page.  
+%\item 
+\end{itemize}
+
+\noindent{\textbf{\uppercase{Do not begin this exam until signaled to do so.}}}
+
+\vfill\clearpage
+%\end{titlepage}
+
+%\begin{inexamonly}
+%\includepdf[pages=1-2]{refcard}
+%\end{inexamonly}
+\blankpage
+
+%: Multiple choice
+\begin{instructions}\noindent
+In each of the multiple choice items below, select the best answer.
+
+Questions with a \multiSymbole\ by them indicate more than one option \textbf{may} be correct.
+You must select all correct options and none of the incorrect options to earn full credit.
+\end{instructions}
+\bigskip
+
+
+\begin{question}{MC-TT}% From V63_0120_001_2010Sp_Midterm_I.dtx
+Which values complete the truth table below?
+    \[
+        \begin{array}{c|c|c} 
+        p & q & p \vee q \\\hline
+        \bT & \bT & x \\
+        \bT & \bF & y \\
+        \bF & \bT & z \\
+        \bF & \bF & \bF 
+        \end{array}
+    \]
+    \begin{choices}
+        \correctchoice{ $x=\bT$, $y=\bT$, $z=\bT$ }% or (correct)
+        \wrongchoice{  $x=\bF$, $y=\bT$, $z=\bT$ }% xor
+        \wrongchoice{  $x=\bT$, $y=\bF$, $z=\bF$ }% and
+        \wrongchoice{  $x=\bF$, $y=\bT$, $z=fF$ }% p ^ -q
+        \wrongchoice{  $x=\bF$, $y=\bF$, $z=\bF$ }% ???
+    \end{choices}
+\end{question}
+
+\begin{question}{MC-TT-imp}% From V63_0120_001_2010Sp_Midterm_I.dtx
+Which values complete the truth table below?
+    \[
+        \begin{array}{c|c|c} 
+        p & q & p \rightarrow q \\\hline
+        \bT & \bT & \bT \\
+        \bT & \bF & x \\
+        \bF & \bT & y \\
+        \bF & \bF & z
+        \end{array}
+    \]
+    \begin{choices}
+        \correctchoice{{ $x=\bF$, $y=\bT$, $z=\bT$ }}% correct
+        \wrongchoice{{ $x=\bF$, $y=\bF$, $z=\bF$ }{}}% and
+        \wrongchoice{{ $x=\bT$, $y=\bT$, $z=\bF$ }{}}% or
+%:FIXME: this distractor is the same as the one above!
+        \wrongchoice{{ $x=\bT$, $y=\bT$, $z=\bF$ }{}}% xor
+        \wrongchoice{{ $x=\bT$, $y=\bT$, $z=\bT$ }{}}% t
+    \end{choices}
+\end{question}
+
+\begin{question}{MC-propositions}% From V63_0120_001_2010Sp_Midterm_I.dtx
+    The Giants and Jets are local football teams, and the Yankees are a baseball team.
+    If $p$ is the proposition that the Giants will win their next game,
+    $q$ is the proposition that the Jets will win their next game,
+    and $r$ is the proposition that the Yankees will win their next game,
+    which of these represents the proposition that the Yankees and one or more of the football teams will win their next game?
+    \begin{choices}
+        \correctchoice{ $(p \vee q) \wedge r$ }% correct
+        \wrongchoice{  $(p \wedge q) \vee r$ }% interchange vee and wedge
+        \wrongchoice{  $p \vee (q \wedge r)$ }% wrong parens
+        \wrongchoice{  $p \wedge (q \vee r)$ }% wrong parens and interchange connectives
+        \wrongchoice{  $p \vee (q \vee r)$ }% ???
+    \end{choices}
+\end{question}
+
+\begin{question}{MC-deMorgan}% From V63_0120_001_2010Sp_Midterm_I.dtx
+    Which of the following propositions is logically equivalent to $\neg(p \wedge q)$?
+    \begin{choices}
+        \correctchoice{{ $\neg p \vee \neg q$}}
+        \wrongchoice{{  $\neg p \wedge \neg q$}}
+        \wrongchoice{{  $\neg p \vee q$}}
+        \wrongchoice{{  $p \vee \neg q$}}
+        \wrongchoice{{  $p \vee q$}}
+    \end{choices}
+\end{question}
+
+\begin{question}{MC-quantifiers}% From V63_0120_001_2010Sp_Midterm_I.dtx
+    Which of these logical sentences correctly translates
+    ``Every real number $y$ has a real number $x$ which is its cube root''?
+    \begin{choices}
+        \correctchoice{$\forall y \in \mathbb{R},\ \exists x \in \mathbb{R},\  y=x^3$}
+        \wrongchoice{$\forall y \in \mathbb{R},\ \forall x \in \mathbb{R},\  y=x^3$}
+        \wrongchoice{$\exists y \in \mathbb{R},\ \exists x \in \mathbb{R},\  y=x^3$}
+        \wrongchoice{$\exists y \in \mathbb{R},\ \forall x \in \mathbb{R},\  y=x^3$}
+        \wrongchoice{$\forall y \in \mathbb{R},\ \exists x \in \mathbb{R},\  x=y^3$}
+    \end{choices}
+\end{question}
+
+\begin{question}{MC-negation}% From V63_0120_001_2010Sp_Midterm_I.dtx
+    Which of these is the negation of the statement ``Every good boy deserves fudge.''
+    \begin{choices}
+        \correctchoice{{  One good boy does not deserve fudge.}}
+        \wrongchoice{{  Every good boy does not deserve fudge.}}
+        \wrongchoice{{  No good boy deserves fudge.}}
+        \wrongchoice{{  Every good boy deserves cake.}}
+        \wrongchoice{{  One good boy deserves cake.}}
+    \end{choices}
+\end{question}
+
+\begin{question}{MC-counterex}% From V63_0120_001_2010Sp_Midterm_I.dtx
+    Referring to the statement ``All cities which are capitals of states begin with a vowel'', a counterexample would be
+    \begin{choices}
+        \correctchoice{{ a city which is the capital of a state but does not begin with a vowel}}
+        \wrongchoice{{  a city which is the capital of a state and begins with a vowel}{}}
+        \wrongchoice{{  a city which is the not the capital of a state and begins with a vowel}{}}
+        \wrongchoice{{  a city which is the not the capital of a state and does not begin with a vowel}{}}
+        \wrongchoice{{  a city which neither begins with a vowel nor is the capital of a state}{}}
+    \end{choices}
+\end{question}
+
+\begin{question}{MC-def-even}% From V63_0120_001_2010Sp_Midterm_I.dtx
+    Which of these is our definition that an integer $x$ is even?
+    \begin{choices}
+        \correctchoice{$x$ is divisble by $2$}
+        \wrongchoice{$\frac{x}{2}$ is an integer}
+        \wrongchoice{The decimal representation of $x$ ends in $0$, $2$, $4$, $6$, or $8$}
+        \wrongchoice{$x$ can be written as a sum of odd integers}
+        \wrongchoice{$x$ can be written as a sum of even integers}
+    \end{choices}
+\end{question}
+
+\begin{questionmult}{MC-div4}% From V63_0120_001_2010Sp_Midterm_I.dtx
+    \scoring{b=0.75}
+    Which of these integers is divisible by $4$?
+    \begin{choices}
+        \correctchoice{$0$}
+        \wrongchoice{$2$}
+        \correctchoice{$8$}
+        \correctchoice{$-4$}
+    \end{choices}
+\end{questionmult}
+
+\begin{question}{MC-divprops}% From V63_0120_001_2010Sp_Midterm_I.dtx
+    If $n$ and $a$ are positive integers and $n \divides a$, which of these must be true?
+    \begin{choices}
+        \correctchoice{{ $n \divides ab$ for all integers $b$}}
+        \wrongchoice{{ $n \divides (a+b)$ for all integers $b$}{}}
+        \wrongchoice{{ $n \divides (a-b)$ for all integers $b$}{}}
+        \wrongchoice{{ $n^2 \divides ab$ for all integers $b$}{}}
+        \wrongchoice{{ $a \divides bn$ for all integers $b$}{}}
+    \end{choices}
+\end{question}
+
+\begin{question}{MC-intersection}% From V63_0120_001_2010Sp_Midterm_II.dtx
+    If $A = \set{1,2}$ and $B = \set{2,3}$, 
+    which of these is equal to $A\intersect B$?
+    \begin{choices}
+        \correctchoice{$\set{2}$}   % correct
+        \wrongchoice {$\set{3}$}     % B\A
+        \wrongchoice {$\set{1,2,3}$} % union
+        \wrongchoice {$\set{1,3}$}   % symmetric difference
+        \wrongchoice {$\set{1}$}     % A\B
+    \end{choices}
+\end{question}
+
+\begin{question}{MC-union}% From V63_0120_001_2010Sp_Midterm_II.dtx
+    If $A = \set{1,2}$ and $B = \set{2,3}$, which of these is equal to $A\union B$?
+    \begin{choices}
+        \correctchoice{$\set{1,2,3}$} % union
+        \wrongchoice {$\set{2}$}     % intersection
+        \wrongchoice {$\set{1,3}$}   % symmetric difference
+        \wrongchoice {$\set{1}$}     % A\B
+        \wrongchoice {$\set{3}$}     % B\A
+    \end{choices}
+\end{question}
+
+\begin{question}{MC-powerset}
+    If $A = \set{1,2}$, which of these is NOT an element of $\PowerSet{A}$?
+    \begin{choices}
+        \correctchoice{$\set{\emptyset}$}     % it's a set containing the empty set
+        \wrongchoice {$\emptyset$}           %
+        \wrongchoice {$\set{1,2}$}           %
+        \wrongchoice {$\set{1}$}             %
+        \wrongchoice {$\set{2}$}             %
+    \end{choices}
+\end{question}
+
+\begin{question}{MC-setdifference}
+    If $A = \set{1,2}$ and $B = \set{2,3}$, which of these is equal to $A-B$?
+    \begin{choices}
+        \correctchoice{$\set{1}$}     % A\B
+        \wrongchoice {$\set{2}$}     % B\A
+        \wrongchoice {$\set{-1}$}    % subtract each element
+        \wrongchoice {$\set{-1,-1}$} % twice?
+        \wrongchoice {$\set{}$}      % random empty set
+    \end{choices}
+\end{question}
+
+\begin{question}{MC-multiplication-principle-easy}
+    A restaurant chain offers a promotion consisting of an appetizer, entr\'ee, 
+    and dessert for a fixed price.  If there are 6 choices of appetizer, 10 choices
+    of entr\'ee, and 2 choices of dessert, how many different meals can be ordered?
+    \begin{choices}
+        \correctchoice{$6 \times 10 \times 2$}  % product
+        \wrongchoice {$6 + 10 + 2$}   % sum
+        \wrongchoice {$(6\times 10)^2$} % (6*10)^2
+        \wrongchoice {$6 \times 10$}  % forgot dessert
+        \wrongchoice {$6 \times 10 \times 3$} % no dessert => one more choice for dessert
+    \end{choices}
+\end{question}
+
+\begin{question}{MC-multiplication-principle-medium}
+    A fast-food restaurant offers 12 different condiments and toppings on its hamburgers.  How many different hamburgers can be ordered?
+    \begin{choices}
+        \correctchoice {$2^{12}$}
+        \wrongchoice  {$12$}
+        \wrongchoice  {$2 \cdot 12$}
+        \wrongchoice  {$12 \cdot 12$}
+        \wrongchoice  {$12!$}
+    \end{choices}
+\end{question}
+
+\begin{question}{MC-addition-principle-overlap}
+    In a sample of 10 television shows, 5 were found to be ``reality'' shows, 
+    3 featured singing, and 2 were reality shows that featured singing.  
+    How many shows were neither reality shows nor singing shows?
+    \begin{choices}
+        \correctchoice{4}% correct (A \union B)'
+        \wrongchoice{6}% A \union B
+        \wrongchoice{8}% (A \intersect B)'
+        \wrongchoice{2}% n(U) - n(A) - n(B)
+        \wrongchoice{0}% n(A) - n(A) - n(B) - n(A \intersect B)
+    \end{choices}
+\end{question}
+
+\AMCcleardoublepage
+\begin{instructions}
+In each of the next five problems, indicate if the statement is true or false.
+Then give a short justification or counterexample.
+\end{instructions}
+
+\shufflegroup{TFJ}
+\insertgroup{TFJ}
+
+\AMCcleardoublepage
+%: Free response
+
+\begin{instructions}\noindent
+The remaining questions are free response questions.
+%Put your answers in the boxes (where provided) and your work/explanations in the space below the problem.
+\begin{itemize}
+\item \textbf{\emph{Read and follow the instructions of every problem.}}  
+\item Show all of your work for purposes of partial credit.  
+\textbf{\emph{Full credit may not be given for an answer alone.  }}
+\item Justify your answers.  \textbf{\emph{Full sentences are not necessary}} but English words help.
+When in doubt, do as much as you think is necessary to demonstrate
+that you understand the problem, keeping in mind that your grader will
+be necessarily skeptical.  
+\end{itemize}
+\end{instructions}
+\bigskip
+\begin{instructions}
+In Canada, postal codes are given by six alternating letters and numbers.
+such as ``M4B~1G5'' (the first must be a letter.  The characters are grouped into triplets for purposes not relevant to this problem).
+\end{instructions}
+
+\begin{question}{FR-Canada-ZIP-a}
+    If there are no restrictions on the  letters and numbers that can be in a postal code, how many such are there?
+    \AMCOpen{lines=4,dots=false,answer={%
+        \begin{minipage}[t]{0.9\textwidth}
+        \noindent\color{blue}\emph{Solution.}
+            Each letter can be one of 26; each number can be one of 10.  
+            Hence the number of codes is
+            \[
+            26 \cdot 10 \cdot 26 \cdot 10 \cdot 26 \cdot 10  = 26^3\cdot 10^3
+            \]
+        \end{minipage}
+        }
+    }{
+        \wrongchoice[0]{0}\scoring{0}
+        \wrongchoice[1]{1}\scoring{1}
+        \wrongchoice[2]{2}\scoring{2}
+        \wrongchoice[3]{3}\scoring{3}
+        \wrongchoice[4]{4}\scoring{4}
+        \correctchoice[5]{5}\scoring{5}
+    }    
+\end{question}
+
+\begin{question}{FR-Canada-ZIP-b}
+    If the Canadian government were to decide that O (oh) should never immediately follow $0$ (zero) in a postal code, how many postal codes would there be?
+    \AMCOpen{lines=5,dots=false,answer={%
+        \begin{minipage}[t]{0.9\textwidth}
+        \noindent\color{blue}\emph{Solution.}
+            The first character can be one of 26.  The second can be any of 10, but if the second is 0, the third cannot be O.  So the number of choices for the second and third characters is $9 \cdot 26 + 1 \cdot 25$.  The fourth and fifth are the same as the second and third, and the six can be any digit.  Hence the total number of codes is
+            \[
+            26 \cdot(9 \cdot 26 + 1 \cdot 25) \cdot (9 \cdot 26 + 1 \cdot 25)\cdot 10
+            \]
+            Another way to do this is to take the answer to the first part and subtract off the disallowed codes.  There are $26^2\cdot 10^2$ numbers with 0O in the second and third spots, and $26^2 \cdot 10^2$ codes with 0O in the third and fourth spots.  There are $26\cdot 10$ codes with \emph{both}.  So the total number of non-disallowed codes is
+            \[
+            26^3 10^3 - 2 \cdot 26^2 10^2 + 26 \cdot 10
+            \]
+        \end{minipage}
+        }
+    }{
+        \wrongchoice[0]{0}\scoring{0}
+        \wrongchoice[1]{1}\scoring{1}
+        \wrongchoice[2]{2}\scoring{2}
+        \wrongchoice[3]{3}\scoring{3}
+        \wrongchoice[4]{4}\scoring{4}
+        \correctchoice[5]{5}\scoring{5}
+    }    
+\end{question}
+\blankpage
+
+\begin{instructions}
+    The only pair of consecutive positive integers $a$, $b$ where $a$ is prime 
+    and $b$ is a perfect cube is $7$, $8$.  
+    Put another way, if $n$ is an integer greater than $2$, 
+    then $n^3-1$ is not prime. 
+\end{instructions}
+
+\begin{question}{FR-proof-a}
+    Demonstrate the proposition in the cases of $n=3$ and $n=4$
+    \AMCOpen{lines=2,dots=false,answer={%
+        \begin{minipage}[t]{0.9\textwidth}
+        \noindent\color{blue}\emph{Solution.}
+        \end{minipage}
+        }
+    }{
+        \wrongchoice[0]{0}\scoring{0}
+        \wrongchoice[1]{1}\scoring{1}
+        \wrongchoice[2]{2}\scoring{2}
+        \wrongchoice[3]{3}\scoring{3}
+        \correctchoice[4]{4}\scoring{4}
+    }    
+\end{question}
+
+\begin{question}{FR-proof-b}
+    Write this proposition in formal (symbolic) language, using the ``divides'' ($\divides$) relation.
+    \AMCOpen{lines=2,dots=false,answer={%
+        \begin{minipage}[t]{0.9\textwidth}
+        \noindent\color{blue}\emph{Solution.}
+        \end{minipage}
+        }
+    }{
+        \wrongchoice[0]{0}\scoring{0}
+        \wrongchoice[1]{1}\scoring{1}
+        \wrongchoice[2]{2}\scoring{2}
+        \wrongchoice[3]{3}\scoring{3}
+        \wrongchoice[4]{4}\scoring{4}
+        \correctchoice[5]{5}\scoring{5}
+    }    
+\end{question}
+
+\begin{question}{FR-proof-c}
+     Prove the proposition.
+    \AMCOpen{lines=6,dots=false,answer={%
+        \begin{minipage}[t]{0.9\textwidth}
+        \noindent\color{blue}\emph{Solution.}
+        \end{minipage}
+        }
+    }{
+        \wrongchoice[0]{0}\scoring{0}
+        \wrongchoice[1]{1}\scoring{1}
+        \wrongchoice[2]{2}\scoring{2}
+        \wrongchoice[3]{3}\scoring{3}
+        \wrongchoice[4]{4}\scoring{4}
+        \correctchoice[5]{5}\scoring{5}
+    }    
+\end{question}
+\blankpage
+
+\begin{question}{FR-symdiff-vd}
+    Let $A$, $B$, and $C$ be sets.
+    Draw a Venn diagram illustration of the identity
+    \[
+        A \symdiff (B \symdiff C) = (A \symdiff B) \symdiff C
+    \]   
+    \AMCOpen{lines=5,dots=false,answer={%
+        \begin{minipage}[t]{0.9\textwidth}
+        \noindent\color{blue}\emph{Solution.}
+        \end{minipage}
+        }
+    }{
+        \wrongchoice[0]{0}\scoring{0}
+        \wrongchoice[1]{1}\scoring{1}
+        \wrongchoice[2]{2}\scoring{2}
+        \wrongchoice[3]{3}\scoring{3}
+        \wrongchoice[4]{4}\scoring{4}
+        \correctchoice[5]{5}\scoring{5}
+    }    
+\end{question}
+
+
+\begin{question}{FR-inclusion-proof}
+    Let $c$ and $d$ be integers and let $C = \left\{ x \in \mathbb{Z} : x \mid c\right\}$ and $D = \left\{ x \in \mathbb{Z} : x \mid d\right\}$.
+    Find and prove a necessary and sufficient condition for $C \subseteq D$.    \AMCOpen{lines=7,dots=false,answer={%
+        \begin{minipage}[t]{0.9\textwidth}
+        \noindent\color{blue}\emph{Solution.}
+        \end{minipage}
+        }
+    }{
+        \wrongchoice[0]{0}\scoring{0}
+        \wrongchoice[1]{1}\scoring{1}
+        \wrongchoice[2]{2}\scoring{2}
+        \wrongchoice[3]{3}\scoring{3}
+        \wrongchoice[4]{4}\scoring{4}
+        \correctchoice[5]{5}\scoring{5}
+    }    
+\end{question}
+\blankpage
+
+}
+\end{document}
