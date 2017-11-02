@@ -1,4 +1,4 @@
-package AMC::DataModule::capture::plus;
+package AMC::DataModule::captureplus;
 
 =head1 NAME
 
@@ -8,8 +8,11 @@ AMC::DataModule::capture::plus - add a few methods to AMC::DataModule::capture
 
 =cut
 
+use parent "AMC::DataModule::capture";
+
 use strict;
 use warnings;
+# use Log::Message::Simple qw(warn debug msg); # not in core distro
 
 =head2 Methods
 
@@ -45,7 +48,7 @@ the answer index.
 
 sub set_zone_manual_nopage {
     my ($self,$sheet,$copy,$type,$id_a,$id_b,$manual)=@_;
-    $zoneid = $self->get_zoneid_nopage($sheet, $copy, type, $id_a, $id_b, 0));
+    my $zoneid = $self->get_zoneid_nopage($sheet, $copy, $type, $id_a, $id_b);
     $self->statement('setZoneManual')->execute($manual,$zoneid);
 }
 
@@ -55,12 +58,12 @@ Get zoneid without knowing page
 =cut 
 
 sub get_zoneid_nopage {
-    my ($self,$student,$copy,$type,$id_a,$id_b,$create)=@_;
+    my ($self,$sheet,$copy,$type,$id_a,$id_b,$create)=@_;
     my $pages = $self->get_student_pages($sheet,$copy);
     my $result = undef;
-    foreach ($@pages) {
-        if ($self->get_zoneid($sheet, $_->{'page'}, $copy, type, $id_a, $id_b, 0)) {
-            $result = $_;
+    foreach (@$pages) {
+        if (my $zone = $self->get_zoneid($sheet, $_->{'page'}, $copy, $type, $id_a, $id_b)) {
+            $result = $zone;
             last; 
         }
     }
