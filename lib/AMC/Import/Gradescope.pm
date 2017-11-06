@@ -1,5 +1,6 @@
 package AMC::Import::Gradescope;
-@ISA=qw(AMC::Import);
+# our @ISA=qw(AMC::Import);
+use parent 'AMC::Import';
 
 =head1 Name
 
@@ -20,8 +21,9 @@ AMC::Import::Gradescope - Package to import Gradecope scores to an AMC project
 use strict;
 use warnings;
 
+use AMC::DataModule::capture qw(ZONE_BOX);
 # My subclass with a couple of extra methods
-use AMC::DataModule::capture::plus;
+use AMC::DataModule::captureplus;
 
 =head2 Constructors
 
@@ -33,14 +35,17 @@ Same as in parent
 
 =cut
 
-sub new {
-    # FIXME: call super constructor
-}
+# sub new {
+#     # FIXME: call super constructor
+#     my $class = shift;
+#     return $class->SUPER::new(@_);
+# }
 
 sub load {
-    # FIXME: call super
+    my $self = shift;
+    $self->SUPER::load;
     # rebless attributes to enhanced versions.
-    bless $self->{'_capture'}, 'AMC::DataModule::capture::plus';
+    bless $self->{'_capture'}, 'AMC::DataModule::captureplus';
 }
 
 =back
@@ -63,11 +68,11 @@ returns: void?
 
 =cut
 
-sub import {
+sub do_import {
     my ($self, $gs, $gs_key, $amc_key, $qnames_map) = @_;
     my $students = $self->{'noms'};
     my $capture = $self->{'_capture'};
-    my $scoring = $self->{'_scoring'}
+    my $scoring = $self->{'_scoring'};
     my $assoc = $self->{'_assoc'};
     my $qname_map_rev = \{reverse %{$qnames_map}};
     # this ought to be lookedup from project options
@@ -80,14 +85,14 @@ sub import {
         while ( my ($amc_qid, $q) = each %{$questions}) {
             # $amc_qid is the question numerical ID, and
             # $q is the question scoring data (see AMC::DataModule::scoring)
-            $amc_qname = $q->{'title'};
-            $gs_qname = $qname_map_rev->{$amc_qname};
-            $amcid = $assoc->get_real(@$sc);
-            $student = $students->data('id',$amcid);
-            $gs_rec = $gs->data($gs_key,$student->{$amc_key});
-            $score = $gs_rec->{$gs_qname};
-            $aid = score_to_answerid($q,$score);
-            $capture->set_zone_manual_nopage($sheet, $page_num, $copy, ZONE_BOX, $amc_qid, $aid, 1);
+            my $amc_qname = $q->{'title'};
+            my $gs_qname = $qname_map_rev->{$amc_qname};
+            my $amcid = $assoc->get_real(@$sc);
+            my $student = $students->data('id',$amcid);
+            my $gs_rec = $gs->data($gs_key,$student->{$amc_key});
+            my $score = $gs_rec->{$gs_qname};
+            my $aid = score_to_answerid($q,$score);
+            $capture->set_zone_manual_nopage($sheet, $copy, ZONE_BOX, $amc_qid, $aid, 1);
         }
     }
 }
@@ -104,12 +109,12 @@ sub import {
 # maybe should extend AMC::DataModule::scoring
 sub score_to_answerid {
     my ($q,$s) = @_;
-    $result = -1;
-    @results = grep 
+    my $result = -1;
+    my @results = grep 
         {substr($_->{'strategy'}, 1) == $s}   
         @{$q->{'answers'}};
     if (!@results) {
-        warn "Score '%s' out of range for question '%s'", $score, $q->{'title'};
+        warn "Score '%s' out of range for question '%s'", $s, $q->{'title'};
     }
     return shift(@results);
 }
