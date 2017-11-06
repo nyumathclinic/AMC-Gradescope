@@ -22,12 +22,12 @@ use AMC::Data;
 use AMC::NamesFile;
 use AMC::Messages;
 
-# @ISA=("AMC::Messages"); Not sure what this does
+# our @ISA=("AMC::Messages");
 
 =head1 DESCRIPTION
 
 This package is for importing scores to the AMC database "manually"; that is,
-not by tikcing boxes
+not by ticking boxes
 
 =head2 Constructors
 
@@ -40,10 +40,22 @@ Constructor. copied from AMC::Export
 Keeping the same interface as that module, must be called by the arrow
 operator.
 
+    $importer = AMC::Import->new(%opts)
+
+Important keywords:
+
+=over 18
+
+=item C<datadir>: directory where the data is to be found
+
+=back
+
 =cut 
 
 sub new {
     my $class = shift;
+    my %options = @_;
+
     # some keyval options.  I don't know what most of these do yet,
     # but I'm going to leave them in for now.
     my $self  = {
@@ -56,23 +68,17 @@ sub new {
         # names data structure
         'noms'=>'',
 
-        'noms.encodage'=>'',
-        'noms.separateur'=>'',
-        'noms.useall'=>1,
-        'noms.postcorrect'=>'',
-        'noms.abs'=>'ABS',
-        'noms.identifiant'=>'',
-
-        'out.rtl'=>'',
-
-        'sort.keys'=>['s:student.name','n:student.line'],
-
-        'marks'=>[],
-
+        # This is only needed if we inherit from AMC::Messages
         'messages'=>[],
         };
-    bless ($self, $class);
-    $self->load;
+    bless $self, $class;
+    # Translate constructor arguments to object attributes
+    my %opts_map = ('datadir'=>'fich.datadir');
+    while (my ($k,$v) = each(%options)) {
+        if (defined $opts_map{$k}) {
+            $self->{$opts_map{$k}} = $v;
+        }
+    }    
     return $self;
 }
 
@@ -82,88 +88,17 @@ sub new {
 
 =over 12
 
-=item set_options($domaine,%f)
-
-Sets options, I guess. Copied from AMC::Export.
-
-Arguments:
-    $domaine - string "namespace" of options
-    %f - hash of option keys to values
-
-Returns: 
-    void
-
-=cut
-
-sub set_options {
-    my ($self,$domaine,%f)=@_;
-    for(keys %f) {
-        my $k=$domaine.'.'.$_;
-        if(defined($self->{$k})) {
-            debug "Option $k = $f{$_}";
-            $self->{$k}=$f{$_};
-        } else {
-            debug "Unusable option <$domaine.$_>\n";
-        }
-    }
-}
-
-=item opts_spec($domaine)
-
-Get a list (or hash?) of options for a specific domain
-
-Arguments:
-    $domaine - namespace for options
-
-Returns:
-    array of keys and values, with $domaine stripped
-
-=cut
-
-sub opts_spec {
-    my ($self,$domaine)=@_;
-    my @o=();
-    for my $k (grep { /^$domaine/ } (keys %{$self})) {
-        my $kk=$k;
-        $kk =~ s/^$domaine\.//;
-        push @o,$kk,$self->{$k} if($self->{$k});
-    }
-    return(@o);
-}
-
-=item load()
-
-Load AMC data objects.
-
-Returns: void
-
-=cut
-
-sub load {
-    my ($self)=@_;
-    die "Needs data directory" if(!-d $self->{'fich.datadir'});
-
-    $self->{'_data'}=AMC::Data->new($self->{'fich.datadir'});
-    $self->{'_scoring'}=$self->{'_data'}->module('scoring');
-    $self->{'_assoc'}=$self->{'_data'}->module('association');
-    $self->{'_capture'}=$self->{'_data'}->module('capture');
-
-    if($self->{'fich.noms'} && ! $self->{'noms'}) {
-	$self->{'noms'}=AMC::NamesFile::new($self->{'fich.noms'},
-					    $self->opts_spec('noms'),
-					   );
-    }
-}
-
-=item import() 
+=item C<do_import()>
 
 Do the importing (Abstract method.  Needs to be implemented in dependents.)
 
+A better name would be C<import> but that's not allowed!
+
 =cut
 
-sub import {
+sub do_import {
     my $self = shift;
-    error "AMC::Import::import is an abstract method.";
+    print "AMC::Import::import is an abstract method. Needs to be implemented\n";
 }
 
 =back
