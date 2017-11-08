@@ -22,6 +22,7 @@ use AMC::Data;
 use AMC::NamesFile;
 use AMC::Messages;
 
+use Data::Dumper;
 # our @ISA=("AMC::Messages");
 
 =head1 DESCRIPTION
@@ -67,19 +68,66 @@ sub new {
 
         # names data structure
         'noms'=>'',
+        'noms.encodage'=>'',
+        'noms.separateur'=>'',
+        'noms.useall'=>1,
+        'noms.postcorrect'=>'',
+        'noms.abs'=>'ABS',
+        'noms.identifiant'=>'',
 
         # This is only needed if we inherit from AMC::Messages
         'messages'=>[],
         };
     bless $self, $class;
     # Translate constructor arguments to object attributes
-    my %opts_map = ('datadir'=>'fich.datadir');
+    my %opts_map = ('datadir'=>'fich.datadir',
+                    'students_list'=>'fich.noms');
     while (my ($k,$v) = each(%options)) {
         if (defined $opts_map{$k}) {
             $self->{$opts_map{$k}} = $v;
         }
     }    
     return $self;
+}
+
+sub set_options {
+    my ($self,$domaine,%f)=@_;
+    for(keys %f) {
+        my $k=$domaine.'.'.$_;
+        if(defined($self->{$k})) {
+            debug "Option $k = $f{$_}";
+            $self->{$k}=$f{$_};
+        } else {
+            debug "Unusable option <$domaine.$_>\n";
+        }
+    }
+}
+
+sub opts_spec {
+    my ($self,$domaine)=@_;
+    my @o=();
+    for my $k (grep { /^$domaine/ } (keys %{$self})) {
+        my $kk=$k;
+        $kk =~ s/^$domaine\.//;
+        push @o,$kk,$self->{$k} if($self->{$k});
+    }
+    return(@o);
+}
+
+sub load {
+    my ($self)=@_;
+    die "Needs data directory" if(!-d $self->{'fich.datadir'});
+
+    $self->{'_data'}=AMC::Data->new($self->{'fich.datadir'});
+    $self->{'_scoring'}=$self->{'_data'}->module('scoring');
+    $self->{'_assoc'}=$self->{'_data'}->module('association');
+    $self->{'_capture'}=$self->{'_data'}->module('capture');
+
+    if($self->{'fich.noms'} && ! $self->{'noms'}) {
+	$self->{'noms'}=AMC::NamesFile::new($self->{'fich.noms'},
+					    $self->opts_spec('noms'),
+					   );                
+    }
 }
 
 =back

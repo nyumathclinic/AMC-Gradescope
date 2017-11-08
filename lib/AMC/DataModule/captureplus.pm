@@ -49,7 +49,11 @@ the answer index.
 sub set_zone_manual_nopage {
     my ($self,$sheet,$copy,$type,$id_a,$id_b,$manual)=@_;
     my $zoneid = $self->get_zoneid_nopage($sheet, $copy, $type, $id_a, $id_b);
+    # with a transaction this causes a "transaction within a transaction" error
+    # but without a transaction this causes a "statement request with no transaction -- setZoneManual" 
+    # $self->begin_transaction('sZMNP');
     $self->statement('setZoneManual')->execute($manual,$zoneid);
+    # $self->end_transaction('sZMNP');
 }
 
 =item C<get_zoneid_nopage>
@@ -59,6 +63,9 @@ Get zoneid without knowing page
 
 sub get_zoneid_nopage {
     my ($self,$sheet,$copy,$type,$id_a,$id_b,$create)=@_;
+    # with a transaction, I get a "cannot start a transaction within a transaction" error
+    # but wihout a transaction, I get a "statement request with no transaction"
+    # $self->begin_transaction('gZNP');
     my $pages = $self->get_student_pages($sheet,$copy);
     my $result = undef;
     foreach (@$pages) {
@@ -70,6 +77,7 @@ sub get_zoneid_nopage {
     if (!$result) {
         warn "Page not found";
     }
+    # $self->end_transaction('gZNP');
     return $result;
 }
 

@@ -20,6 +20,7 @@ AMC::Import::Gradescope - Package to import Gradecope scores to an AMC project
 
 use strict;
 use warnings;
+use Data::Dumper;
 
 use AMC::DataModule::capture qw(ZONE_BOX);
 # My subclass with a couple of extra methods
@@ -44,8 +45,9 @@ Same as in parent
 sub load {
     my $self = shift;
     $self->SUPER::load;
-    # rebless attributes to enhanced versions.
+    # rebless attribute to enhanced version.
     bless $self->{'_capture'}, 'AMC::DataModule::captureplus';
+    return $self;
 }
 
 =back
@@ -70,28 +72,57 @@ returns: void?
 
 sub do_import {
     my ($self, $gs, $gs_key, $amc_key, $qnames_map) = @_;
+    if (!$self->{'noms'}) { $self->load; }
     my $students = $self->{'noms'};
     my $capture = $self->{'_capture'};
     my $scoring = $self->{'_scoring'};
     my $assoc = $self->{'_assoc'};
-    my $qname_map_rev = \{reverse %{$qnames_map}};
-    # this ought to be lookedup from project options
+    my $qname_map_rev = {};
+    # Reverse the hash that $qnames_map points to.
+    # There is probably a better way with the reverse function
+    # but it's not working for me now.
+    while (my($k,$v) = each (%{$qnames_map})) { 
+        $qname_map_rev->{$v} = $k;
+    }
+    # this ought to be lookedup from project options. But it may not even be
+    # necessary since we aren't checking whether any boxes are ticked by the
+    # student.
     my $darkness_threshold=0.5;
 
-    for my $sc (@{$capture->student_copies}) {
+    # Looks weird, but $capture->student_copies does return an array, not a
+    # reference to an array.
+    for my $sc ($capture->student_copies) {
         my ($sheet, $copy) = @$sc;
         my $ssb=$scoring->student_scoring_base(@$sc,$darkness_threshold); 
         my $questions = $ssb->{'questions'};
         while ( my ($amc_qid, $q) = each %{$questions}) {
             # $amc_qid is the question numerical ID, and
             # $q is the question scoring data (see AMC::DataModule::scoring)
+            # skip if this question if it's not in the Gradescope question names map
             my $amc_qname = $q->{'title'};
-            my $gs_qname = $qname_map_rev->{$amc_qname};
+            next unless my $gs_qname = $qname_map_rev->{$amc_qname};
+
+            # Look up the student's score and tick the correct box:
+            #
+            # 1. Get their AMC numeric id
+            # 2. Look up the record in the AMC names file
+            # 3. Get their $amc_key value
+            # 4. Look up the same value for the $gs_key in the Gradescope scores file
+            # 5. Get the score from the Gradescope record
+            # 6. Look up the answer id from the question record by matching the score
+            # 7. Tick the box corresponding for the corresponding student sheet, copy,
+            #    question, and answer.
             my $amcid = $assoc->get_real(@$sc);
-            my $student = $students->data('id',$amcid);
-            my $gs_rec = $gs->data($gs_key,$student->{$amc_key});
-            my $score = $gs_rec->{$gs_qname};
+            # print "amcid: ", $amcid, "\n";
+            # print "gs_qname: ", $gs_qname, "\n";
+            my ($student) = $students->data('id' ,$amcid);
+            # print "student: ", Dumper($student);
+            my ($gs_rec) = $gs->data($gs_key,$student->{$amc_key});
+            # print "gs_rec:", Dumper($gs_rec);
+            my $score = $gs_rec->{lc($gs_qname)};
+            # print "score: ", $score, "\n";
             my $aid = score_to_answerid($q,$score);
+            # print "answer id: ", $aid, "\n";
             $capture->set_zone_manual_nopage($sheet, $copy, ZONE_BOX, $amc_qid, $aid, 1);
         }
     }
@@ -107,6 +138,8 @@ sub do_import {
 #   index of the answer corresponding to that score, or undef if not found
 # 
 # maybe should extend AMC::DataModule::scoring
+# 
+# In either case, a private method not for EXPORTing.
 sub score_to_answerid {
     my ($q,$s) = @_;
     my $result = -1;
@@ -116,7 +149,12 @@ sub score_to_answerid {
     if (!@results) {
         warn "Score '%s' out of range for question '%s'", $s, $q->{'title'};
     }
-    return shift(@results);
+    else {
+        my $r = shift(@results);
+        # print "score_to_answerid:r: ", Dumper($r), "\n";
+        $result = $r->{'answer'};
+    }
+    return $result;
 }
 
 # This project uses Semantic Versioning <http://semver.org>. Major versions
