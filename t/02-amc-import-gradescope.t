@@ -53,11 +53,6 @@ is($importer->{'_capture'}->sql_single($sql_get_manual,28,33,5), 1);
 
 
 
-TODO: {
-    local $TODO = "Still working out implementation";
-    # skip this if the last test didn't succeed
-    todo_skip "Too much output", 2 if ($importer->{'noms'}->liste != 44);
-
+TODO: {    
     
-
 }
