@@ -31,14 +31,22 @@ Matthew Leingang, leingang@nyu.edu
 
 use Getopt::Long;
 use Data::Dumper; # for debugging
+use XML::Simple;
+use Carp;
+
+use FindBin qw($Bin);
+use lib "$Bin/../lib";
 
 # use AMC::Import::Gradescope;
 use Gradescope::ScoresFile;
+use AMC::Import::Gradescope;
+use AMC::Basic;
 
-my $project_dir = '';
+my $project_dir = '.';
 my $data_dir = '';
 my $amc_key = '';
 my $gs_key = '';
+my $students_list = '';
 my $debug, $verbose;
 my $qlist=[];
 my $qname_map={};
@@ -48,22 +56,14 @@ GetOptions(
     'verbose'=>\$verbose,
     'project=s'=>\$project_dir,
     'data=s'=>\$data_dir, # you'd only want to set this to overload the project option
+    'students_list=s'=>\$students_list,
     'amckey=s'=>\$amc_key,
     'gskey=s'=>\$gs_key,
     'qlist=s@{1,}'=>$qlist,
     'qmap=s%{1,}'=>$qname_map
 );
-my $gs_path = shift(@ARGV);
-$project_options = read_project_options($project_dir);
 
-# $data_dir can be specified on the command line.
-# If not, the current project's options file is read for it.
-# If still not, croak.
-$data_dir = $project_options->{'data'} unless $data_dir;
-if(! -d $data_dir) {
-    attention("No DATA directory: $data_dir");
-    die "No DATA directory: $data_dir";
-}
+my $gs_path = shift(@ARGV);
 
 print Dumper({
     'debug'=>$debug,
@@ -78,9 +78,67 @@ print Dumper({
 });
 
 
-my $importer = AMC::Import::Gradescope->new(datadir=>$data_dir);
-my $gs = Gradescope::ScoresFile::new($gs_path)
-exit($importer->import($gs, $amc_key, $gs_key, $qname_map));
+croak("Scoresfile '$gs_path' does not exist") if (!-f $gs_path);
+
+$project_options = read_project_options($project_dir);
+
+# $data_dir can be specified on the command line.
+# If not, the current project's options file is read for it.
+# If still not, croak.
+$data_dir = $project_options->{'data'} unless $data_dir;
+if(! -d $data_dir) {
+    croak ("Data directory '$data_dir' does not exist");
+}
+# student list
+# If not specified on CL, look in options.xml
+if (!-f $students_list) {
+    $students_list=$project_options->{'listeetudiants'};
+    $students_list =~ s/%HOME/$ENV{'HOME'}/;
+}
+# keys
+if (!$amc_key) {
+    # optional arguments are supposed to be optional!
+    # But having all these positional arguments on the command line
+    # is a pain.
+    #
+    # Better: make a reasonable default.
+    # The only AMC key we can count on is _ID_.
+    # I think its value can be specified in AMC project options.
+    croak("AMC key not specified.  Rerun with --amckey [key]");
+}
+if (!gs_key) {
+    # Again, there is one known meaningful key and that's SID.
+    # Right now that contains the NetID.
+    croak("Gradescope key not specified.  Rerun with --gskey");
+}
+
+# This does NOT save warning messages to a file 'debug.log'.
+# It DOES suppress htem from going to STDOUT/STDERR, whch is useful
+# since I'm getting many warnings.
+# I really want to use Log::Message::Simple or Log::Log4Perl.
+set_debug('debug.log');
+
+
+###
+# if qmap DNE and qlist does, construct qmap
+my $gs = Gradescope::ScoresFile::new($gs_path);
+if (!%$qname_map && @$qlist) {
+    my @gs_qnames = $gs->question_heads;
+    my @amc_qnames = @$qlist;
+    my %hash;
+    @hash{@gs_qnames} = @amc_qnames;
+    print Dumper("hash: ", %hash);
+    $qname_map = \%hash;
+}
+
+print "qname_map: ",  Dumper($qname_map);
+
+croak("No questions to import") if !keys(%$qname_map);
+
+
+my $importer = AMC::Import::Gradescope->new('datadir'=>$data_dir,'students_list'=>$students_list);
+exit($importer->do_import($gs, $amc_key, $gs_key, $qname_map));
+
 
 ####
 # This stuff should probably go in a separate package
@@ -90,3 +148,4 @@ sub read_project_options {
     $xml = new XML::Simple;
     return $xml->XMLin($dir . "/options.xml");
 }
+
