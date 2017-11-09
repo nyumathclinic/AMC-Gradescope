@@ -79,6 +79,18 @@ sub heads {
 }
 
 
+=item C<question_heads>: array of strings
+
+Column heads from the CSV file that belong to questions
+
+=cut
+
+sub question_heads {
+    my $self = shift;
+    my @heads = $self->heads;
+    return grep /\d+:/, @heads;
+}
+
 =item C<errors>: array of ... strings?
 
 Get a list of errors, perhaps registered by other methods.
