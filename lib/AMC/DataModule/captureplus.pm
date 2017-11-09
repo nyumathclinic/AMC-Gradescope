@@ -13,6 +13,7 @@ use parent "AMC::DataModule::capture";
 use strict;
 use warnings;
 # use Log::Message::Simple qw(warn debug msg); # not in core distro
+use Data::Dumper;
 
 =head2 Methods
 
@@ -48,11 +49,14 @@ the answer index.
 
 sub set_zone_manual_nopage {
     my ($self,$sheet,$copy,$type,$id_a,$id_b,$manual)=@_;
+    print "set_zone_manual_nopage:begin. ", Dumper{'sheet'=>$sheet,'copy'=>$copy,'type'=>$type,'id_a'=>$id_a,'id_b'=>$id_b,'manual'=>$manual};
     my $zoneid = $self->get_zoneid_nopage($sheet, $copy, $type, $id_a, $id_b);
+    print "set_zone_manual_nopage:zoneid: ", $zoneid, "\n";
     # with a transaction this causes a "transaction within a transaction" error
     # but without a transaction this causes a "statement request with no transaction -- setZoneManual" 
     # $self->begin_transaction('sZMNP');
-    $self->statement('setZoneManual')->execute($manual,$zoneid);
+    my $result=$self->statement('setZoneManual')->execute($manual,$zoneid);
+    print "set_zone_manual_nopage:result ", Dumper($result), "\n";
     # $self->end_transaction('sZMNP');
 }
 
@@ -67,6 +71,7 @@ sub get_zoneid_nopage {
     # but wihout a transaction, I get a "statement request with no transaction"
     # $self->begin_transaction('gZNP');
     my $pages = $self->get_student_pages($sheet,$copy);
+    # $self->end_transaction('gZNP');
     my $result = undef;
     foreach (@$pages) {
         if (my $zone = $self->get_zoneid($sheet, $_->{'page'}, $copy, $type, $id_a, $id_b)) {
@@ -78,6 +83,7 @@ sub get_zoneid_nopage {
         warn "Page not found";
     }
     # $self->end_transaction('gZNP');
+    # print "get_zoneid_nopage:result: ", $result, "\n";
     return $result;
 }
 
