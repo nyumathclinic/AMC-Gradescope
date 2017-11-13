@@ -9,8 +9,10 @@ use Data::Dumper;
 
 plan tests => 8;
 
+use AMC::Basic;
 use AMC::Import::Gradescope;
 use Gradescope::ScoresFile;
+
 
 # copy data to temporary directory so we don't spoil it
 my $datadir = 't/mc-project/data';
@@ -47,12 +49,14 @@ my $qmap = {
 };
 
 my $sql_get_manual = "select manual from capture_zone where student=? and copy=0 and id_a=? and id_b=?";
+$importer->{'_capture'}->begin_transaction('xxxx');
 is($importer->{'_capture'}->sql_single($sql_get_manual,28,33,5), -1);
 $importer->do_import($gs,'email','email',$qmap);
 is($importer->{'_capture'}->sql_single($sql_get_manual,28,33,5), 1);
+$importer->{'_capture'}->end_transaction('xxxx');
 
 
 
-TODO: {    
+# TODO: {    
     
-}
+# }

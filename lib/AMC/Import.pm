@@ -122,6 +122,7 @@ sub load {
     $self->{'_scoring'}=$self->{'_data'}->module('scoring');
     $self->{'_assoc'}=$self->{'_data'}->module('association');
     $self->{'_capture'}=$self->{'_data'}->module('capture');
+    $self->{'_layout'}=$self->{'_data'}->module('layout');
 
     if($self->{'fich.noms'} && ! $self->{'noms'}) {
 	$self->{'noms'}=AMC::NamesFile::new($self->{'fich.noms'},

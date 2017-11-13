@@ -93,7 +93,7 @@ sub do_import {
     # reference to an array.
     for my $sc ($capture->student_copies) {
         my ($sheet, $copy) = @$sc;
-        my $ssb=$scoring->student_scoring_base(@$sc,$darkness_threshold); 
+        my $ssb=$scoring->student_scoring_base(@$sc,$darkness_threshold,1); 
         my $questions = $ssb->{'questions'};
         while ( my ($amc_qid, $q) = each %{$questions}) {
             # $amc_qid is the question numerical ID, and

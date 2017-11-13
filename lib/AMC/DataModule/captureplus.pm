@@ -55,9 +55,10 @@ sub set_zone_manual_nopage {
     # with a transaction this causes a "transaction within a transaction" error
     # but without a transaction this causes a "statement request with no transaction -- setZoneManual" 
     # $self->begin_transaction('sZMNP');
+    # the workaround lets the transaction commit anyway.  Bad!
     my $result=$self->statement('setZoneManual')->execute($manual,$zoneid);
     print "set_zone_manual_nopage:result ", Dumper($result), "\n";
-    # $self->end_transaction('sZMNP');
+    $self->end_transaction('sZMNP');
 }
 
 =item C<get_zoneid_nopage>
@@ -69,6 +70,7 @@ sub get_zoneid_nopage {
     my ($self,$sheet,$copy,$type,$id_a,$id_b,$create)=@_;
     # with a transaction, I get a "cannot start a transaction within a transaction" error
     # but wihout a transaction, I get a "statement request with no transaction"
+    # See https://project.auto-multiple-choice.net/boards/2/topics/6000
     # $self->begin_transaction('gZNP');
     my $pages = $self->get_student_pages($sheet,$copy);
     # $self->end_transaction('gZNP');

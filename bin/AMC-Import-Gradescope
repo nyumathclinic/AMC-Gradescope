@@ -116,7 +116,7 @@ if (!gs_key) {
 # It DOES suppress htem from going to STDOUT/STDERR, whch is useful
 # since I'm getting many warnings.
 # I really want to use Log::Message::Simple or Log::Log4Perl.
-set_debug('debug.log');
+# set_debug('debug.log');
 
 
 ###
