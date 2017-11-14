@@ -58,6 +58,7 @@ sub set_zone_manual_nopage {
     # the workaround lets the transaction commit anyway.  Bad!
     my $result=$self->statement('setZoneManual')->execute($manual,$zoneid);
     print "set_zone_manual_nopage:result ", Dumper($result), "\n";
+    # This also causes warnings, but at least it allows the commits to go through.
     $self->end_transaction('sZMNP');
 }
 
@@ -72,6 +73,8 @@ sub get_zoneid_nopage {
     # but wihout a transaction, I get a "statement request with no transaction"
     # See https://project.auto-multiple-choice.net/boards/2/topics/6000
     # $self->begin_transaction('gZNP');
+    # warn "get_zoneid_nopage.trans: " . $self->{'data'}->{'trans'} . "\n";
+    # $self->{'data'}->end_transaction('');
     my $pages = $self->get_student_pages($sheet,$copy);
     # $self->end_transaction('gZNP');
     my $result = undef;
@@ -88,6 +91,7 @@ sub get_zoneid_nopage {
     # print "get_zoneid_nopage:result: ", $result, "\n";
     return $result;
 }
+
 
 =back
 
