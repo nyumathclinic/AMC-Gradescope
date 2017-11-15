@@ -2,18 +2,51 @@
 
 =head1 NAME
 
-AMC-import-gradescope.pl - Import scores from a Gradescope score file to an AMC database
+AMC-import-gradescope - Import scores from a Gradescope score file to an AMC database
 
 =head1 SYNOPSIS
 
-    $ AMC-import-gradescope --amckey=email --gskey=Email --qlist FR-Canada-ZIP-a FR-Canada-ZIP-b Midterm_I_Free_Response_scores.csv
+    $ AMC-import-gradescope --project PROJECTDIR --qlist QNAME1 QNAME2 ... --amckey=AMCKEY --gskey=GSKEY [options] GSFILE
 
-Import from the file C<Midterm_I_Free_Response_scores.csv>.
-Match the students by email addresses.
-Import the first Gradescope question's scores to the AMC question titled C<FR-Canada-ZIP-a>, 
-and the second Gradescope questions's scores to the AMC question titled C<FR-Canada-ZIP-b>
+Import scores from GSFILE into the project at PROJECTDIR, joining records by
+matching GSKEY to AMCKEY.  Assign the first problem in the scores file to
+the AMC question with title QNAME1, the second to QNAME2, etc.
+
+Positional argument:
+
+    GSFILE      Gradescope scores file.
+                A CSV downloaded from Gradescope
+
+Keyword arguments (needed):
+
+    --amckey    Key in AMC names file on which to join records
+                (default: C<_ID_>)
+    --gskey     Key in Gradescope scores file on which to join records
+                (default: SID)
+    --project   directory of AMC project 
+                (default: current directory)
+    --qlist     list of question titles, into which to import scores
+    I<or>
+    --qmap       hash of Gradescope question names to AMC question titles
+
+
+Options
+
+    --datadir   directory of AMC project data
+                (defaults to C<%PROJET/data>)
+
+    --verbose   be verbose to STDOUT
+                (to be implemented)
+
+    --debug     print lots of debugging statements to STDERR
+                (to be implelemented)
+
+    --          all done 
+                (use if --qlist or --qmap come before GSFILE)
 
 =head1 DESCRIPTION
+
+
 
 =head1 COPYRIGHT
 
@@ -30,6 +63,7 @@ Matthew Leingang, leingang@nyu.edu
 =cut
 
 use Getopt::Long;
+use Pod::Usage;
 use Data::Dumper; # for debugging
 use XML::Simple;
 use Carp;
@@ -37,7 +71,6 @@ use Carp;
 use FindBin qw($Bin);
 use lib "$Bin/../lib";
 
-# use AMC::Import::Gradescope;
 use Gradescope::ScoresFile;
 use AMC::Import::Gradescope;
 use AMC::Basic;
@@ -60,7 +93,9 @@ GetOptions(
     'amckey=s'=>\$amc_key,
     'gskey=s'=>\$gs_key,
     'qlist=s@{1,}'=>$qlist,
-    'qmap=s%{1,}'=>$qname_map
+    'qmap=s%{1,}'=>$qname_map,
+    'help|?'=> sub { pod2usage(-verbose=>1, -exitval=>0) },
+    'man'=> sub { pod2usage(-verbose=>2, -exitvalu=>0) }
 );
 
 my $gs_path = shift(@ARGV);
@@ -75,7 +110,7 @@ print Dumper({
     'qlist'=>$qlist,
     'qmap'=>$qname_map,    
     'gs_path'=>$gs_path
-});
+}) or pod2usage( -verbose => 1, -exitval => 1);
 
 
 croak("Scoresfile '$gs_path' does not exist") if (!-f $gs_path);
@@ -97,19 +132,10 @@ if (!-f $students_list) {
 }
 # keys
 if (!$amc_key) {
-    # optional arguments are supposed to be optional!
-    # But having all these positional arguments on the command line
-    # is a pain.
-    #
-    # Better: make a reasonable default.
-    # The only AMC key we can count on is _ID_.
-    # I think its value can be specified in AMC project options.
-    croak("AMC key not specified.  Rerun with --amckey [key]");
+    $amc_key = '_ID_';
 }
 if (!gs_key) {
-    # Again, there is one known meaningful key and that's SID.
-    # Right now that contains the NetID.
-    croak("Gradescope key not specified.  Rerun with --gskey");
+    $gs_key = 'SID';
 }
 
 # This does NOT save warning messages to a file 'debug.log'.
@@ -142,6 +168,7 @@ exit($importer->do_import($gs, $amc_key, $gs_key, $qname_map));
 
 ####
 # This stuff should probably go in a separate package
+# Or maybe use Config::Any
 sub read_project_options {
     # read options from project directory
     $dir = shift;
