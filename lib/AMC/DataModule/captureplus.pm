@@ -47,6 +47,9 @@ the answer index.
 
 =cut
 
+# TODO: change _nopage to _firstpage
+# Also, overload get_zoneid to accept a special argument like '*' or _FIRST
+# and internally call this one.
 sub set_zone_manual_nopage {
     my ($self,$sheet,$copy,$type,$id_a,$id_b,$manual)=@_;
     print "set_zone_manual_nopage:begin. ", Dumper{'sheet'=>$sheet,'copy'=>$copy,'type'=>$type,'id_a'=>$id_a,'id_b'=>$id_b,'manual'=>$manual};
@@ -66,7 +69,9 @@ sub set_zone_manual_nopage {
 Get zoneid without knowing page
 
 =cut 
-
+# TODO: change this to _firstpage
+# Also, overload get_zoneid to accept a special argument like '*' or _FIRST
+# and internally call this one.
 sub get_zoneid_nopage {
     my ($self,$sheet,$copy,$type,$id_a,$id_b,$create)=@_;
     # with a transaction, I get a "cannot start a transaction within a transaction" error
