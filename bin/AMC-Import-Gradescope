@@ -14,17 +14,13 @@ the AMC question with title QNAME1, the second to QNAME2, etc.
 
 Positional argument:
 
-    GSFILE      Gradescope scores file.
-                A CSV downloaded from Gradescope
+    GSFILE      Gradescope scores file. (A CSV file downloaded from Gradescope)
 
 Keyword arguments (needed):
 
-    --amckey    Key in AMC names file on which to join records
-                (default: C<_ID_>)
-    --gskey     Key in Gradescope scores file on which to join records
-                (default: SID)
-    --project   directory of AMC project 
-                (default: current directory)
+    --amckey    Key in AMC names file on which to join records (default: C<_ID_>)
+    --gskey     Key in Gradescope scores file on which to join records (default: SID)
+    --project   directory of AMC project (default: current directory)
     --qlist     list of question titles, into which to import scores
     I<or>
     --qmap       hash of Gradescope question names to AMC question titles
@@ -32,21 +28,17 @@ Keyword arguments (needed):
 
 Options
 
-    --datadir   directory of AMC project data
-                (defaults to C<%PROJET/data>)
+    --datadir   directory of AMC project data(defaults to C<%PROJET/data>)
+    --verbose   be verbose to STDOUT (to be implemented)
+    --debug     print lots of debugging statements to STDERR (to be implelemented)
 
-    --verbose   be verbose to STDOUT
-                (to be implemented)
-
-    --debug     print lots of debugging statements to STDERR
-                (to be implelemented)
-
-    --          all done 
-                (use if --qlist or --qmap come before GSFILE)
+    --          all done (use if --qlist or --qmap come before GSFILE)
 
 =head1 DESCRIPTION
 
+=head2 Configuration
 
+The configuration file settings.cfg
 
 =head1 COPYRIGHT
 
@@ -62,9 +54,10 @@ Matthew Leingang, leingang@nyu.edu
 
 =cut
 
+use Config::Any;
+use Data::Dumper; # for debugging
 use Getopt::Long;
 use Pod::Usage;
-use Data::Dumper; # for debugging
 use XML::Simple;
 use Carp;
 
@@ -84,6 +77,19 @@ my $debug, $verbose;
 my $qlist=[];
 my $qname_map={};
 
+my $cfg = Config::Any->load_files({'files'=>['amc.ini']});
+for (@$cfg) {
+    my ($filename, $file_config) = %$_;
+    next unless $filename eq 'amc.ini';
+    while (my($program,$config) = each(%{$file_config})){
+        next unless $program eq 'import-gradescope';
+        $amc_key = $config->{'amckey'};
+        $gs_key  = $config->{'gskey'};
+        @question_list = split ',', $config->{'qlist'};
+        $qlist   = \@question_list;
+    }
+}
+
 GetOptions(
     'debug'=>\$debug,
     'verbose'=>\$verbose,
@@ -95,23 +101,11 @@ GetOptions(
     'qlist=s@{1,}'=>$qlist,
     'qmap=s%{1,}'=>$qname_map,
     'help|?'=> sub { pod2usage(-verbose=>1, -exitval=>0) },
-    'man'=> sub { pod2usage(-verbose=>2, -exitvalu=>0) }
-);
+    'man'=> sub { pod2usage(-verbose=>2, -exitval=>0) },
+    'show'=> sub { print dump_vars(); exit 0; }
+) or pod2usage( -verbose => 1, -exitval => 1);
 
 my $gs_path = shift(@ARGV);
-
-print Dumper({
-    'debug'=>$debug,
-    'verbose'=>$verbose,
-    'project'=>$project_dir,
-    'data'=>$data_dir,
-    'amckey'=>$amc_key,
-    'gskey'=>$gs_key,
-    'qlist'=>$qlist,
-    'qmap'=>$qname_map,    
-    'gs_path'=>$gs_path
-}) or pod2usage( -verbose => 1, -exitval => 1);
-
 
 croak("Scoresfile '$gs_path' does not exist") if (!-f $gs_path);
 
@@ -176,3 +170,16 @@ sub read_project_options {
     return $xml->XMLin($dir . "/options.xml");
 }
 
+sub dump_vars {
+    return Dumper({
+        'debug'=>$debug,
+        'verbose'=>$verbose,
+        'project'=>$project_dir,
+        'data'=>$data_dir,
+        'amckey'=>$amc_key,
+        'gskey'=>$gs_key,
+        'qlist'=>$qlist,
+        'qmap'=>$qname_map,    
+        'gs_path'=>$gs_path
+    });
+}
