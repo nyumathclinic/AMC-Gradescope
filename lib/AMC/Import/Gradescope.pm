@@ -116,11 +116,20 @@ sub do_import {
             # print "amcid: ", $amcid, "\n";
             # print "gs_qname: ", $gs_qname, "\n";
             my ($student) = $students->data('id' ,$amcid);
-            # print "student: ", Dumper($student);
+            print "student: ", Dumper($student);
             my ($gs_rec) = $gs->data($gs_key,$student->{$amc_key});
-            # print "gs_rec:", Dumper($gs_rec);
+            print "gs_rec:", Dumper($gs_rec);
+            if (!$gs_rec) {
+                print "No student found.  Moving on.\n";
+                next;
+            }
+            print "gs_qname: ", $gs_qname, "\n";
             my $score = $gs_rec->{lc($gs_qname)};
-            # print "score: ", $score, "\n";
+            if (!defined($score)) {
+                print "Score not found.  Moving on.\n";
+                next;
+            }
+            print "score: ", $score, "\n";
             my $aid = score_to_answerid($q,$score);
             # print "answer id: ", $aid, "\n";
             $capture->set_zone_manual_nopage($sheet, $copy, ZONE_BOX, $amc_qid, $aid, 1);
