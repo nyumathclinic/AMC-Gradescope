@@ -130,9 +130,28 @@ sub do_import {
                 next;
             }
             print "score: ", $score, "\n";
-            my $aid = score_to_answerid($q,$score);
-            # print "answer id: ", $aid, "\n";
-            $capture->set_zone_manual_nopage($sheet, $copy, ZONE_BOX, $amc_qid, $aid, 1);
+            # We used to use score_to_answerid($q,$score) here to look up the
+            # only the answer corresponding to the ticked score.
+            # But when things are mis-imported, it's hard to undo.
+            # So now we zero out the unticked scores too.
+            # This multiplies the number of calls to set_zone... by the maximum score,
+            # but so it goes.  
+            # TODO: provide a command-line option to zero out old scores if necessary.
+            my $scored = -1;
+            my $ticked;
+            for my $a (@{$q->{'answers'}}) {
+                if (substr($a->{'strategy'}, 1) == $score) {
+                    $ticked = 1;
+                    $scored = $score;
+                }
+                else {
+                    $ticked = 0;
+                }
+                $capture->set_zone_manual_nopage($sheet, $copy, ZONE_BOX, $amc_qid, $a->{'answer'}, $ticked);
+            }
+            if ($scored == -1) {
+                warn "Score '%s' out of range for question '%s'", $score, $q->{'title'};
+            }
         }
     }
 }
@@ -151,6 +170,7 @@ sub do_import {
 # In either case, a private method not for EXPORTing.
 sub score_to_answerid {
     my ($q,$s) = @_;
+    print "score_to_answerid.begin:q: ", Dumper($q);
     my $result = -1;
     my @results = grep 
         {substr($_->{'strategy'}, 1) == $s}   
